@@ -11,5 +11,5 @@ func getMessageText(m Message) string {
 	return fmt.Sprintf(`
 To: %v
 Message: %v
-`, &m.Recipient, &m.Text)
+`, m.Recipient, m.Text)
 }
