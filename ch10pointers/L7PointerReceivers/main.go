@@ -1,0 +1,23 @@
+package main
+
+import (
+	"fmt"
+)
+
+type car struct {
+	color string
+}
+
+func (c *car) setColor(color string) {
+	c.color = color
+	fmt.Printf("Color setColor:%v\n", c.color)
+}
+
+func main() {
+	c := car{
+		color: "white",
+	}
+	c.setColor("blue")
+	fmt.Printf("Color outside:%v\n",c.color)
+	// prints "blue"
+}
