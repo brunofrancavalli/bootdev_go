@@ -2,67 +2,49 @@ package main
 
 import (
 	"fmt"
-	"time"
 )
 
 func pingPong(numPings int) {
-	pings := make(chan struct{})
-	pongs := make(chan struct{})
-	go ponger(pings, pongs)
-	go pinger(pings, numPings)
-	go func() {
-		i := 0
-		for range pongs {
-			fmt.Println("got pong", i)
-			i++
-		}
-		fmt.Println("pongs done")
-	}()
+	done := make(chan int)
+	pings := make(chan int)
+	pongs := make(chan int)
+	go ponger(pings, pongs, done)
+	go pinger(pings, pongs, numPings)
 
-	breakOut := 0
-	for {
-		select {
-		case i, ok := <-pings:
-			if ok {
-				fmt.Println(i)
-			} else {
-				breakOut++
-			}
-		case i, ok := <-pongs:
-			if ok {
-				fmt.Println(i)
-			} else {
-				breakOut++
-			}
-		}
-		if breakOut == 2 {
-			break
-		}
-	}
+	<-done
 }
 
 // don't touch below this line
 
-func pinger(pings chan struct{}, numPings int) {
-	sleepTime := 50 * time.Millisecond
+func pinger(pings chan int, pongs chan int, numPings int) {
 	for i := 0; i < numPings; i++ {
 		fmt.Printf("sending ping %v\n", i)
-		pings <- struct{}{}
-		time.Sleep(sleepTime)
-		sleepTime *= 2
+		pings <- i
+		iReturn, _ := <-pongs
+
+		if i != iReturn {
+			fmt.Println("Did not get a pong back")
+		} else {
+			fmt.Printf("Got pong %v\n", iReturn)
+		}
+
 	}
 	close(pings)
 }
 
-func ponger(pings, pongs chan struct{}) {
-	i := 0
-	for range pings {
-		fmt.Printf("got ping %v, sending pong %v\n", i, i)
-		pongs <- struct{}{}
-		i++
+func ponger(pings, pongs, done chan int) {
+	for {
+		i, ok := <-pings
+		if ok {
+			fmt.Printf("got ping %v, sending pong %v\n", i, i)
+			pongs <- i
+		} else {
+			break
+		}
 	}
 	fmt.Println("pings done")
 	close(pongs)
+	close(done)
 }
 
 func test(numPings int) {
@@ -75,4 +57,5 @@ func main() {
 	test(4)
 	test(3)
 	test(2)
+	fmt.Println("Application Done")
 }
